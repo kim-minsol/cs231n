@@ -25,6 +25,8 @@ def softmax_loss_naive(W, X, y, reg):
     # Initialize the loss and gradient to zero.
     loss = 0.0
     dW = np.zeros_like(W)
+    num_train = X.shape[0]
+    num_class = W.shape[1]
 
     #############################################################################
     # TODO: Compute the softmax loss and its gradient using explicit loops.     #
@@ -34,7 +36,20 @@ def softmax_loss_naive(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = X @ W # (N x C)
+    scores -= np.max(scores) # multiply constant !!! -> numeric stability
+
+    for i in range(num_train):
+      # scores[i] -= np.max(scores[i]) # multiply constant !!! -> numeric stability
+      p = np.exp(scores[i]) / np.sum(np.exp(scores[i]))
+      loss -= np.log(p[y[i]])
+
+      scoress = scores[i]
+      dW[:,y[i]] -= X[i]
+      dW += X[i].reshape(-1, 1) @ p.reshape(1,-1)
+
+    loss = loss / num_train + reg * np.sum(W * W)
+    dW = dW / num_train + 2 * reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -50,6 +65,8 @@ def softmax_loss_vectorized(W, X, y, reg):
     # Initialize the loss and gradient to zero.
     loss = 0.0
     dW = np.zeros_like(W)
+    num_train = X.shape[0]
+    num_class = W.shape[1]
 
     #############################################################################
     # TODO: Compute the softmax loss and its gradient using no explicit loops.  #
@@ -59,7 +76,17 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = X @ W # (N x C)
+    scores -= np.max(scores) # multiply constant !!! -> numeric stability
+    p = np.exp(scores) / np.sum(np.exp(scores), axis=1).reshape(-1, 1)
+    loss = -np.sum(np.log(p[range(num_train), y])) / num_train # cross-entropy
+    loss += reg * np.sum(W * W)
+    
+    # compute gradient
+    coef = p.copy()
+    coef[range(num_train), y] = - (1 - p[range(num_train), y])
+    dW = X.T @ coef / num_train
+    dW += 2 * reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
